@@ -1,1 +1,1 @@
-# -MSc-in-AI-Demokritos-Deep-Learning-Course
+# MSc-in-AI-Demokritos-Deep-Learning-Course
