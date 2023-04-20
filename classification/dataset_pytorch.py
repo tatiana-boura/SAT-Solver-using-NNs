@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import os
 
+
 class SAT3Dataset(Dataset):
     def __init__(self, root, filename, transform=None, pre_transform=None):
         self.filename = filename
@@ -40,7 +41,7 @@ class SAT3Dataset(Dataset):
             # now, create data object
             data = Data(x=node_feats, edge_index=edge_index, edge_attr=edge_feats, y=label)
             # save the data
-            torch.save(data,os.path.join(self.processed_dir,f'data_{index}.pt'))
+            torch.save(data, os.path.join(self.processed_dir, f'data_{index}.pt'))
 
     def len(self):
         return self.data.shape[0]

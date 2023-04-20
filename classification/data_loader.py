@@ -24,9 +24,9 @@ the AND operator. The number of row is the number of clauses .
 '''
 
 
-def dataset_processing():
+def dataset_processing(separate_test=False):
 
-    print("Start the processing...\n")
+    print("Start the data processing...\n")
 
     # create columns of dataset
     dictionary = {"numberOfVariables": [],
@@ -185,6 +185,9 @@ def dataset_processing():
     print(f'Ratio of UNSAT : {1.0-sat_ratio:.4f}')
 
     # store dataset in format that supports long lists
+
+    df = df.sample(frac=1).reset_index(drop=True) ########## shuffle the dataset
+
     store = pd.HDFStore('store.h5')
     store['df'] = df
     store.close()

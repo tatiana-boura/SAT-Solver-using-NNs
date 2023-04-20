@@ -9,6 +9,7 @@ torch.manual_seed(15)
 class GNN(torch.nn.Module):
     def __init__(self, feature_size, model_params):
         super(GNN, self).__init__()
+        # get model parameters (used for tuning)
         embedding_size = model_params["model_embedding_size"]
         n_heads = model_params["model_attention_heads"]
         self.n_layers = model_params["model_layers"]
@@ -27,7 +28,7 @@ class GNN(torch.nn.Module):
         # Batch Normalization after the activation function of the output layer
         self.bn1 = BatchNorm1d(embedding_size)
 
-        # other layers
+        # other layers based on number parameter tuning
         for i in range(self.n_layers):
             self.conv_layers.append(TransformerConv(embedding_size, embedding_size, heads=n_heads,
                                                     dropout=dropout_rate, edge_dim=edge_dim, beta=True))
