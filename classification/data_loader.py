@@ -193,11 +193,23 @@ def dataset_processing(separate_test=False):
     # shuffle the dataset
     df = df.sample(frac=1).reset_index(drop=True)
 
-    store = pd.HDFStore('./raw/store.h5')
-    store['df'] = df
-    store.close()
+    if not separate_test:
+        df_tr = df.sample(frac=0.8)
+        df_test = df.drop(df_tr.index)
 
-    if separate_test:
+        store = pd.HDFStore('./raw/store.h5')
+        store['df'] = df_tr
+        store.close()
+
+        store = pd.HDFStore('./raw/store_test.h5')
+        store['df'] = df_test
+        store.close()
+
+    else:
+        store = pd.HDFStore('./raw/store.h5')
+        store['df'] = df
+        store.close()
+
         store = pd.HDFStore('./raw/store_test.h5')
         store['df'] = df_test
         store.close()
