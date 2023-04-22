@@ -7,8 +7,10 @@ import os
 
 
 class SAT3Dataset(Dataset):
-    def __init__(self, root, filename, transform=None, pre_transform=None):
+    def __init__(self, root, filename, test=False, transform=None, pre_transform=None):
         self.filename = filename
+        self.test = test
+        self.data = None
         super(SAT3Dataset, self).__init__(root, transform, pre_transform)
 
     @property
@@ -17,7 +19,14 @@ class SAT3Dataset(Dataset):
 
     @property
     def processed_file_names(self):
-        return "no_implemented_stuff.pt"
+        # If these files are found in raw_dir, processing is skipped
+        store = pd.HDFStore(os.path.join(self.raw_dir, self.filename))
+        self.data = store['df'].reset_index()
+
+        if self.test:
+            return [f'data_test_{i}.pt' for i in list(self.data.index)]
+        else:
+            return [f'data_{i}.pt' for i in list(self.data.index)]
 
     def download(self):
         # there won't be any need to download the data
@@ -25,8 +34,8 @@ class SAT3Dataset(Dataset):
 
     def process(self):
         # open the dataframe
-        store = pd.HDFStore(self.filename)
-        self.data = store['df']
+        store = pd.HDFStore(os.path.join(self.raw_dir, self.filename))
+        self.data = store['df'].reset_index()
 
         for index, cnf in tqdm(self.data.iterrows(), total=self.data.shape[0]):
             # get node features (here we actually don't have many)
@@ -41,10 +50,16 @@ class SAT3Dataset(Dataset):
             # now, create data object
             data = Data(x=node_feats, edge_index=edge_index, edge_attr=edge_feats, y=label)
             # save the data
-            torch.save(data, os.path.join(self.processed_dir, f'data_{index}.pt'))
+            if self.test:
+                torch.save(data, os.path.join(self.processed_dir, f'data_test_{index}.pt'))
+            else:
+                torch.save(data, os.path.join(self.processed_dir, f'data_{index}.pt'))
 
     def len(self):
         return self.data.shape[0]
 
-    def get(self, idx):
-        return torch.load(os.path.join(self.processed_dir, f'data_{idx}.pt'))
+    def get(self, index):
+        if self.test:
+            return torch.load(os.path.join(self.processed_dir, f'data_test_{index}.pt'))
+        else:
+            return torch.load(os.path.join(self.processed_dir, f'data_{index}.pt'))

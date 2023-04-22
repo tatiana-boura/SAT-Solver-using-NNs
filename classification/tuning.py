@@ -2,8 +2,24 @@ import itertools as it
 from train import training
 
 
-def tune_parameters(pos_weight):
+def tune_parameters(pos_weight, separate_test):
+    # parameters that have to do with the GNN
+    hyperparameters_options_model = {
+        "model_embedding_size": [64, 128],
+        "model_attention_heads": [1],
+        "model_layers": [2, 3],
+        "model_dropout_rate": [0.1, 0.2, 0.5],
+        "model_dense_neurons": [128, 256]
+    }
+    # parameters that have to do with the training
+    hyperparameters_options_algo = {
+        "batch_size": [32, 64],  # with 128, time error
+        "learning_rate": [0.001, 0.01, 0.1],
+        "weight_decay": [0.00001, 0.0001, 0.001],
+        "pos_weight": [pos_weight]
+    }
 
+    '''
     # parameters that have to do with the GNN
     hyperparameters_options_model = {
         "model_embedding_size": [64],
@@ -20,22 +36,7 @@ def tune_parameters(pos_weight):
         "pos_weight": [pos_weight]
     }
     '''
-    # parameters that have to do with the GNN
-    hyperparameters_options_model = {
-        "model_embedding_size": [64, 128],
-        "model_attention_heads": [1],
-        "model_layers": [2, 3],
-        "model_dropout_rate": [0.1, 0.2, 0.5],
-        "model_dense_neurons": [128, 256]
-    }
-    # parameters that have to do with the training
-    hyperparameters_options_algo = {
-        "batch_size": [32, 64],  # with 128, time error
-        "learning_rate": [0.001, 0.01, 0.1],
-        "weight_decay": [0.00001, 0.0001, 0.001],
-        "pos_weight": [pos_weight]
-    }
-    '''
+
     model_hyperparameters = {"batch_size": 64, "learning_rate": 0.01, "weight_decay": 0.0001, "pos_weight": pos_weight,
                              "model_embedding_size": 0, "model_attention_heads": 0, "model_layers": 0,
                              "model_dropout_rate": 0, "model_dense_neurons": 0}
@@ -58,7 +59,7 @@ def tune_parameters(pos_weight):
         model_hyperparameters["model_dense_neurons"] = parameters[4]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(model_hyperparameters)
+        validation_loss = training(params=model_hyperparameters, separate_test=separate_test)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
@@ -92,7 +93,7 @@ def tune_parameters(pos_weight):
 
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(algo_hyperparameters)
+        validation_loss = training(params=algo_hyperparameters, separate_test=separate_test)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')

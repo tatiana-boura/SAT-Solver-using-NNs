@@ -10,7 +10,8 @@ from model import GNN
 import warnings
 warnings.filterwarnings('ignore')
 
-MAX_NUMBER_OF_EPOCHS = 31
+MAX_NUMBER_OF_EPOCHS = 51
+EARLY_STOPPING_COUNTER = 10
 
 # set seed so that the train-test-valid sets are always the same
 torch.manual_seed(15)
@@ -27,6 +28,7 @@ def plot_errors(errors, early_stopping):
     plt.plot([i+1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], train_loss, color='r', label='Training loss')
     plt.plot([i + 1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], valid_loss, color='g', label='Validation loss')
     plt.vlines(x=early_stopping, ymin=0.0, ymax=1.0, colors='purple', ls='--', label='early stopping activated')
+    plt.vlines(x=early_stopping-EARLY_STOPPING_COUNTER, ymin=0.0, ymax=1.0, colors='magenta', label='considered model')
 
     plt.ylabel('Training and Validation loss')
     plt.xlabel('Epochs')
@@ -108,26 +110,39 @@ def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
     return running_loss / step
 
 
-def training(params, make_err_logs=False):
+def training(params, separate_test, make_err_logs=False):
     # loading the dataset
     print("Dataset loading...")
     dataset = SAT3Dataset(root="./", filename="store.h5")
 
-    # split into train, validation and test 60% - 20% - 20%
-    train_set_size = np.ceil(dataset.len() * 0.6)
-    valid_set_size = np.ceil(dataset.len() * 0.2)
-    test_set_size = dataset.len() - (train_set_size + valid_set_size)
+    if not separate_test:
+        # if all sets from the same dataset split into train, validation and test 60% - 20% - 20%
+        train_set_size = np.ceil(dataset.len() * 0.6)
+        valid_set_size = np.ceil(dataset.len() * 0.2)
+        test_set_size = dataset.len() - (train_set_size + valid_set_size)
 
-    torch.manual_seed(15)
-    train_dataset, valid_dataset, test_dataset = \
-        torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size), int(test_set_size)])
+        torch.manual_seed(15)
+        train_dataset, valid_dataset, test_dataset = \
+            torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size), int(test_set_size)])
 
-    #train_loader = DataLoader(train_dataset, batch_size=params["batch_size"], shuffle=True)
-    train_loader = DataLoader(train_dataset, batch_size=params["batch_size"], shuffle=False)
-    #valid_loader = DataLoader(valid_dataset, batch_size=params["batch_size"], shuffle=True)
-    valid_loader = DataLoader(valid_dataset, batch_size=params["batch_size"], shuffle=False)
-    _ = DataLoader(test_dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
-    print("Dataset loading completed")
+        # no shuffling, as it is already shuffled
+        train_loader = DataLoader(train_dataset, batch_size=params["batch_size"])
+        valid_loader = DataLoader(valid_dataset, batch_size=params["batch_size"])
+        _ = DataLoader(test_dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
+    else:
+        # if we have already kept a different test set : split into train and validation 80% - 20%
+        train_set_size = np.ceil(dataset.len() * 0.8)
+        valid_set_size = np.ceil(dataset.len() * 0.2)
+
+        torch.manual_seed(15)
+        train_dataset, valid_dataset = \
+            torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size)])
+
+        # no shuffling, as it is already shuffled
+        train_loader = DataLoader(train_dataset, batch_size=params["batch_size"])
+        valid_loader = DataLoader(valid_dataset, batch_size=params["batch_size"])
+
+    print("Dataset loading completed\n")
 
     params["model_edge_dim"] = train_dataset[0].edge_attr.shape[1]
 
@@ -136,7 +151,7 @@ def training(params, make_err_logs=False):
     model_params = {k: v for k, v in params.items() if k.startswith("model_")}
     model = GNN(feature_size=train_dataset[0].x.shape[1], model_params=model_params)
     model = model.to(device)
-    print("Model loading completed")
+    print("Model loading completed\n")
 
     weight = torch.tensor([params["pos_weight"]], dtype=torch.float32).to(device)
 
@@ -166,7 +181,7 @@ def training(params, make_err_logs=False):
 
         print(f'EPOCH | {epoch}')
 
-        if early_stopping_counter < 10:
+        if early_stopping_counter < EARLY_STOPPING_COUNTER:
             # perform one training epoch
             model.train()
             training_loss = train_one_epoch(model, train_loader, optimizer, criterion)
@@ -215,31 +230,39 @@ def training(params, make_err_logs=False):
     return final_valid_loss
 
 
-def testing(params):
+def testing(params, separate_test):
     # loading the dataset
     print("Dataset loading...")
-    dataset = SAT3Dataset(root="./", filename="store.h5")
+    if not separate_test:
+        dataset = SAT3Dataset(root="./", filename="store.h5")
+        # split into train, validation and test 60% - 20% - 20%
+        train_set_size = np.ceil(dataset.len() * 0.6)
+        valid_set_size = np.ceil(dataset.len() * 0.2)
+        test_set_size = dataset.len() - (train_set_size + valid_set_size)
 
-    # split into train, validation and test 60% - 20% - 20%
-    train_set_size = np.ceil(dataset.len() * 0.6)
-    valid_set_size = np.ceil(dataset.len() * 0.2)
-    test_set_size = dataset.len() - (train_set_size + valid_set_size)
+        torch.manual_seed(15)
+        train_dataset, valid_dataset, test_dataset = \
+            torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size), int(test_set_size)])
 
-    torch.manual_seed(15)
-    train_dataset, valid_dataset, test_dataset = \
-        torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size), int(test_set_size)])
+        # no shuffling, as it is already shuffled
+        _ = DataLoader(train_dataset, batch_size=params["batch_size"])
+        _ = DataLoader(valid_dataset, batch_size=params["batch_size"])
+        test_loader = DataLoader(test_dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
+    else:
+        """if test dataset is different, just load it"""
+        dataset = SAT3Dataset(root="./", filename="store_test.h5", test=True)
+        test_loader = DataLoader(dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
 
-    _ = DataLoader(train_dataset, batch_size=params["batch_size"], shuffle=False)
-    _ = DataLoader(valid_dataset, batch_size=params["batch_size"], shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
-    print("Dataset loading completed")
+    print("Dataset loading completed\n")
 
     # see test set's metrics in the best (not overfitted) model
+    print("Model loading...\n")
     model_params = {k: v for k, v in params.items() if k.startswith("model_")}
-    best_model = GNN(feature_size=train_dataset[0].x.shape[1], model_params=model_params)
+    best_model = GNN(feature_size=dataset[0].x.shape[1], model_params=model_params)
     best_model.load_state_dict(torch.load('./final_model.pth', map_location="cuda:0"))
     best_model.to(device)
     best_model.eval()
+    print("Model loading completed\n")
 
     weight = torch.tensor([params["pos_weight"]], dtype=torch.float32).to(device)
 

@@ -25,6 +25,8 @@ the AND operator. The number of row is the number of clauses .
 
 
 def dataset_processing(separate_test=False):
+    """ The separate_test value is used if we want to use as test set the  cnf's that have the biggest length
+    (to see if the model generalizes well) in larger inputs than these that it has been trained for """
 
     print("Start the data processing...\n")
 
@@ -39,6 +41,8 @@ def dataset_processing(separate_test=False):
 
     # create dataframe
     df = pd.DataFrame(dictionary)
+    # dataframe to store different test, if needed
+    df_test = pd.DataFrame(dictionary)
 
     directory = "../dataset"
 
@@ -58,11 +62,12 @@ def dataset_processing(separate_test=False):
             # get label of these data : UUF means UNSAT and UF means SAT
             y = 0 if dir_info[0][:3] == "UUF" else 1
 
-            # we want to see the balancing of the dataset
-            if y == 1:
-                satisfiable_num += int(dir_info[2])
-            else:
-                unsatisfiable_num += int(dir_info[2])
+            # we want to see the balancing of the training dataset
+            if not (separate_test and (dir_info[0] == "UF250" or dir_info[0] == "UUF250")):
+                if y == 1:
+                    satisfiable_num += int(dir_info[2])
+                else:
+                    unsatisfiable_num += int(dir_info[2])
 
             # Nodes:
             #     0 - numberOfVariables- 1                                      : x_1 - x_n
@@ -90,12 +95,6 @@ def dataset_processing(separate_test=False):
                 clauses = [line.strip() for line in clauses]  # remove '\n' from the end and '' from the start
                 clauses = [line[:-2] for line in clauses]     # keep only the corresponding variables
                 clauses = [line for line in clauses if line != '']  # keep only the lines that correspond to a clause
-
-                '''
-                if len(clauses) != numberOfClauses:
-                    # if the lines(clauses) that we processed are not the correct number(), raise Exception
-                    raise Exception("Something went wrong with the line processing")
-                '''
 
                 # edges
                 edges_1 = []
@@ -172,9 +171,14 @@ def dataset_processing(separate_test=False):
 
                 # insert new row in dataframe :
                 # "numberOfVariables","numberOfClauses", "variablesSymb", "variablesNum", "edges", "edgeAttr","label"
-                df.loc[len(df)] = [number_of_variables, number_of_clauses,
-                                   node_values, nodes, [edges_1, edges_2],
-                                   [edge_attr, edge_attr], [y]]
+                if separate_test and (dir_info[0] == "UF250" or dir_info[0] == "UUF250"):
+                    df_test.loc[len(df_test)] = [number_of_variables, number_of_clauses,
+                                                 node_values, nodes, [edges_1, edges_2],
+                                                 [edge_attr, edge_attr], [y]]
+                else:
+                    df.loc[len(df)] = [number_of_variables, number_of_clauses,
+                                       node_values, nodes, [edges_1, edges_2],
+                                       [edge_attr, edge_attr], [y]]
 
     print(f'Satisfiable CNFs   : {satisfiable_num}')
     print(f'Unsatisfiable CNFs : {unsatisfiable_num}\n')
@@ -186,11 +190,17 @@ def dataset_processing(separate_test=False):
 
     # store dataset in format that supports long lists
 
-    df = df.sample(frac=1).reset_index(drop=True) ########## shuffle the dataset
+    # shuffle the dataset
+    df = df.sample(frac=1).reset_index(drop=True)
 
-    store = pd.HDFStore('store.h5')
+    store = pd.HDFStore('./raw/store.h5')
     store['df'] = df
     store.close()
+
+    if separate_test:
+        store = pd.HDFStore('./raw/store_test.h5')
+        store['df'] = df_test
+        store.close()
 
     print("\nProcessing completed.")
 
