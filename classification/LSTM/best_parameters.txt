@@ -1,0 +1,1 @@
+{"batch_size": 64, "learning_rate": 0.01, "weight_decay": 1e-05, "pos_weight": 0.7295325587679006, "sequence_length": 1, "model_hidden_units": 64, "model_num_layers": 1}
