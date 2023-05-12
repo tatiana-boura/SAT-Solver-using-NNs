@@ -7,7 +7,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # max timeseries length
-MAX_TIMESERIES_LENGTH = 1065*3
+MAX_TIMESERIES_LENGTH = 1065*3 + 10
 
 '''
 This code converts the given CNF clauses to a format that will be useful for constructing the graph
@@ -27,22 +27,28 @@ the AND operator. The number of row is the number of clauses .
 '''
 
 
-def dataset_processing():
+def dataset_processing(separate_test=False):
 
     print("Start the data processing...\n")
 
     dictionary = {"label": []}
-    # create dataframe
-    df = pd.DataFrame(dictionary)
+    # create dataframes
+    df_tr = pd.DataFrame(dictionary)
+    df_valid = pd.DataFrame(dictionary)
+    df_test = pd.DataFrame(dictionary)
     # create columns of dataset
-    for i in range(MAX_TIMESERIES_LENGTH):
-        df[f'var_{i+1}'] = 0.0
+    for i in range(0, MAX_TIMESERIES_LENGTH):
+        df_tr[f'var_{i + 1}'] = 0.0
+        df_valid[f'var_{i + 1}'] = 0.0
+        df_test[f'var_{i + 1}'] = 0.0
 
     directory = "../../dataset"
 
     satisfiable_num = 0
     unsatisfiable_num = 0
 
+    counter = 0
+    cOunt = 0
     for dirName in os.listdir(directory):
         curr_dir = directory + "/" + dirName
         if os.path.isdir(curr_dir):
@@ -53,11 +59,11 @@ def dataset_processing():
             # number of clauses in each
             # data-file regarding the folder
             # get label of these data : UUF means UNSAT and UF means SAT
-            y = 0 if dir_info[0][:3] == "UUF" else 1
+            y = 0.0 if dir_info[0][:3] == "UUF" else 1.0
 
             # we want to see the balancing of the training dataset
             if y == 1:
-                satisfiable_num += int(dir_info[2])
+                satisfiable_num += 2*int(dir_info[2])  # 2 because of the augmentation trick
             else:
                 unsatisfiable_num += int(dir_info[2])
 
@@ -89,6 +95,8 @@ def dataset_processing():
 
                 for i in range(len(timeseries), MAX_TIMESERIES_LENGTH):
                     timeseries += [0.0]
+
+                #print(len(timeseries))
                 '''
                 if fileName == "uf4.cnf":
                     print(node_values)
@@ -96,8 +104,71 @@ def dataset_processing():
                 '''
                 f.close()
 
-                # insert new row in dataframe :
-                df.loc[len(df)] = [y] + timeseries
+                # insert new row in dataframes :
+                # first insert the satisfiable form (check report)
+                k = int(4.26 * number_of_variables)
+                k *= 3  # as k represent the number of clauses
+                k -= 1
+                timeseries_sat = timeseries[:k] + [0.0 for _ in range(k, len(timeseries))]
+               
+                if not separate_test:
+                    if counter < 8:
+                        df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
+                        if y == 0.0:
+                            unsatisfiable_num += 1
+                            df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
+                                                    [0.0 for _ in range(k + 2, len(timeseries))]
+                        # then insert the timeseries
+                        df_tr.loc[len(df_tr)] = [y] + timeseries
+
+                    elif counter < 9:
+                        df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
+                        if y == 0.0:
+                            unsatisfiable_num += 1
+                            df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
+                                                          [0.0 for _ in range(k + 2, len(timeseries))]
+                        # then insert the timeseries
+                        df_valid.loc[len(df_valid)] = [y] + timeseries
+
+                    elif counter < 10:
+                        df_test.loc[len(df_test)] = [1.0] + timeseries_sat
+                        if y == 0.0:
+                            unsatisfiable_num += 1
+                            df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
+                                                        [0.0 for _ in range(k + 2, len(timeseries))]
+                        # then insert the timeseries
+                        df_test.loc[len(df_test)] = [y] + timeseries
+                else:
+                    if dir_info[0] == "UF250" or dir_info[0] == "UUF250":
+                        if y == 0.0:
+                            unsatisfiable_num += 1
+                            df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
+                                                        [0.0 for _ in range(k + 2, len(timeseries))]
+                        df_test.loc[len(df_test)] = [1.0] + timeseries_sat
+                        # then insert the timeseries
+                        df_test.loc[len(df_test)] = [y] + timeseries
+                    else:
+                        if counter < 8:
+                            if y == 0.0:
+                                unsatisfiable_num += 1
+                                df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
+                                                        [0.0 for _ in range(k + 2, len(timeseries))]
+                            df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
+                            # then insert the timeseries
+                            df_tr.loc[len(df_tr)] = [y] + timeseries
+                        else:
+                            if y == 0.0:
+                                unsatisfiable_num += 1
+                                df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
+                                                              [0.0 for _ in range(k + 2, len(timeseries))]
+                            df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
+                            # then insert the timeseries
+                            df_valid.loc[len(df_valid)] = [y] + timeseries
+
+                if counter == 10:
+                    counter = 0
+                else:
+                    counter += 1
 
     print(f'Satisfiable CNFs   : {satisfiable_num}')
     print(f'Unsatisfiable CNFs : {unsatisfiable_num}\n')
@@ -107,15 +178,14 @@ def dataset_processing():
     print(f'Ratio of SAT   : {sat_ratio:.4f}')
     print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}')
 
-    # store dataset in format that supports long lists
-    
     # usually time series data are split without shuffling
-    #  df = df.sample(frac=1).reset_index(drop=True)
 
-    df_tr = df.sample(frac=0.8)
-    df_test = df.drop(df_tr.index)
+    print(len(df_tr))
+    print(len(df_valid))
+    print(len(df_test))
 
     df_tr.to_csv("./store_lstm.csv", index=False)
+    df_valid.to_csv("./store_valid_lstm.csv", index=False)
     df_test.to_csv("./store_test_lstm.csv", index=False)
 
     print("\nProcessing completed.")

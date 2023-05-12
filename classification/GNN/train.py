@@ -1,6 +1,7 @@
 import torch
 from torch_geometric.loader import DataLoader
-from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, precision_score, recall_score, roc_auc_score, \
+    precision_recall_curve, PrecisionRecallDisplay
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -27,8 +28,10 @@ def plot_errors(errors, early_stopping):
     valid_loss = losses[1]
     plt.plot([i+1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], train_loss, color='r', label='Training loss')
     plt.plot([i + 1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], valid_loss, color='g', label='Validation loss')
-    plt.vlines(x=early_stopping, ymin=0.0, ymax=1.0, colors='purple', ls='--', label='early stopping activated')
-    plt.vlines(x=early_stopping-EARLY_STOPPING_COUNTER, ymin=0.0, ymax=1.0, colors='magenta', label='considered model')
+    plt.vlines(x=early_stopping, ymin=0.0, ymax=max(valid_loss), colors='purple', ls='--',
+               label='early stopping activated')
+    plt.vlines(x=early_stopping-EARLY_STOPPING_COUNTER, ymin=0.0, ymax=max(valid_loss), colors='magenta',
+               label='considered model')
 
     plt.ylabel('Training and Validation loss')
     plt.xlabel('Epochs')
@@ -38,7 +41,7 @@ def plot_errors(errors, early_stopping):
     plt.show()
 
 
-def metrics(y_pred, y, epoch):
+def metrics(y_pred, y, epoch, y_proba=[]):
     print(f"\n Confusion matrix: \n {confusion_matrix(y_pred, y)}")
     # save confusion matrix as plot
     cm = confusion_matrix(y_pred, y)
@@ -56,6 +59,13 @@ def metrics(y_pred, y, epoch):
     # auc score
     roc = roc_auc_score(y, y_pred)
     print(f"ROC AUC   : {roc:.4f}")
+
+    if len(y_proba) > 0:
+        prec, recall, _ = precision_recall_curve(probas_pred=y_proba, y_true=y, pos_label=1.0)
+        pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+        fig, ax = plt.subplots()
+        pr_display.plot(ax=ax)
+        fig.figure.savefig(f'./plots/pr_{epoch}.png')
 
 
 def train_one_epoch(model, train_loader, optimizer, criterion):
@@ -82,6 +92,7 @@ def train_one_epoch(model, train_loader, optimizer, criterion):
 
 def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
     predictions = []
+    predictions_proba = []
     labels = []
     running_loss = 0.0
     step = 0
@@ -99,13 +110,15 @@ def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
 
         if print_metrics:
             predictions.append(np.rint(torch.sigmoid(prediction).cpu().detach().numpy()))
+            predictions_proba.append(torch.sigmoid(prediction).cpu().detach().numpy())
             labels.append(batch.y.cpu().detach().numpy())
 
     if print_metrics:
         predictions = np.concatenate(predictions).ravel()
         labels = np.concatenate(labels).ravel()
+        predictions_proba = np.concatenate(predictions_proba).ravel()
 
-        metrics(predictions, labels, epoch)
+        metrics(predictions, labels, epoch, predictions_proba)
 
     return running_loss / step
 
@@ -226,7 +239,7 @@ def testing(params):
     print("Dataset loading completed\n")
 
     # see test set's metrics in the best (not overfitted) model
-    print("Model loading...\n")
+    print("Model loading...")
     model_params = {k: v for k, v in params.items() if k.startswith("model_")}
     best_model = GNN(feature_size=dataset[0].x.shape[1], model_params=model_params)
     best_model.load_state_dict(torch.load('./final_model.pth', map_location="cuda:0"))

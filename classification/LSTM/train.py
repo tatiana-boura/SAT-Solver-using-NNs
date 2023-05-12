@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score, precision_score, recall_score, roc_auc_score, \
+    precision_recall_curve, PrecisionRecallDisplay
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -10,7 +11,6 @@ from dataset_pytorch import SAT3Dataset
 from model import ShallowLSTM
 
 
-# set seed so that the train-test-valid sets are always the same
 torch.manual_seed(15)
 torch.cuda.manual_seed(15)
 
@@ -25,10 +25,12 @@ def plot_errors(errors, early_stopping):
     losses = list(map(list, zip(*errors)))
     train_loss = losses[0]
     valid_loss = losses[1]
-    plt.plot([i+1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], train_loss, color='r', label='Training loss')
+    plt.plot([i + 1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], train_loss, color='r', label='Training loss')
     plt.plot([i + 1 for i in range(MAX_NUMBER_OF_EPOCHS-1)], valid_loss, color='g', label='Validation loss')
-    plt.vlines(x=early_stopping, ymin=0.0, ymax=1.0, colors='purple', ls='--', label='early stopping activated')
-    plt.vlines(x=early_stopping-EARLY_STOPPING_COUNTER, ymin=0.0, ymax=1.0, colors='magenta', label='considered model')
+    plt.vlines(x=early_stopping, ymin=0.0, ymax=max(valid_loss), colors='purple', ls='--',
+               label='early stopping activated')
+    plt.vlines(x=early_stopping-EARLY_STOPPING_COUNTER, ymin=0.0, ymax=max(valid_loss), colors='magenta',
+               label='considered model')
 
     plt.ylabel('Training and Validation loss')
     plt.xlabel('Epochs')
@@ -38,7 +40,7 @@ def plot_errors(errors, early_stopping):
     plt.show()
 
 
-def metrics(y_pred, y, epoch):
+def metrics(y_pred, y, epoch, y_proba=[]):
     print(f"\n Confusion matrix: \n {confusion_matrix(y_pred, y)}")
     # save confusion matrix as plot
     cm = confusion_matrix(y_pred, y)
@@ -56,6 +58,13 @@ def metrics(y_pred, y, epoch):
     # auc score
     roc = roc_auc_score(y, y_pred)
     print(f"ROC AUC   : {roc:.4f}")
+
+    if len(y_proba) > 0:
+        prec, recall, _ = precision_recall_curve(probas_pred=y_proba, y_true=y, pos_label=1.0)
+        pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
+        fig, ax = plt.subplots()
+        pr_display.plot(ax=ax)
+        fig.figure.savefig(f'./plots/pr_{epoch}.png')
 
 
 def train_one_epoch(model, train_loader, optimizer, criterion):
@@ -83,6 +92,7 @@ def train_one_epoch(model, train_loader, optimizer, criterion):
 
 def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
     predictions = []
+    predictions_proba = []
     labels = []
     running_loss = 0.0
     step = 0
@@ -94,20 +104,22 @@ def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
         # make prediction
         prediction = model(X.float())
         # calculate loss
-        loss = criterion(torch.squeeze(prediction), y.float())
-
+        loss = criterion(prediction, y.float())
+        #loss = criterion(torch.squeeze(prediction), y.float())
         running_loss += loss.item()
         step += 1
 
         if print_metrics:
             predictions.append(np.rint(torch.sigmoid(prediction).cpu().detach().numpy()))
+            predictions_proba.append(torch.sigmoid(prediction).cpu().detach().numpy())
             labels.append(y.cpu().detach().numpy())
 
     if print_metrics:
         predictions = np.concatenate(predictions).ravel()
+        predictions_proba = np.concatenate(predictions_proba).ravel()
         labels = np.concatenate(labels).ravel()
 
-        metrics(predictions, labels, epoch)
+        metrics(predictions, labels, epoch, predictions_proba)
 
     return running_loss / step
 
@@ -115,28 +127,22 @@ def evaluation(epoch, model, test_loader, criterion, print_metrics=False):
 def training(params, make_err_logs=False):
     # loading the dataset
     print("Dataset loading...")
-    dataset = SAT3Dataset(filename="store_lstm.csv", sequence_length=params["sequence_length"])
+    train_dataset = SAT3Dataset(filename="store_lstm.csv")
+    valid_dataset = SAT3Dataset(filename="store_valid_lstm.csv")
 
-    # we have already kept a different test set, so split into train and validation 80% - 20%
-    train_set_size = np.ceil(len(dataset) * 0.8)
-    valid_set_size = len(dataset) - train_set_size
-
-    torch.manual_seed(15)
-    train_dataset, valid_dataset = \
-        torch.utils.data.random_split(dataset, [int(train_set_size), int(valid_set_size)])
-
-    # no shuffling, as it is already shuffled
+    # shuffle the sequences
     train_loader = DataLoader(train_dataset, batch_size=params["batch_size"], shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=params["batch_size"], shuffle=True)
 
     print("Dataset loading completed\n")
 
-    # load the GNN model
+    # load the LSTM model
     print("Model loading...")
     model_params = {k: v for k, v in params.items() if k.startswith("model_")}
     model = ShallowLSTM(feature_size=train_dataset[0][0].shape[1], model_params=model_params)
     model = model.to(device)
     print("Model loading completed\n")
+    print(f'Number of model parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}\n')
 
     weight = torch.tensor([params["pos_weight"]], dtype=torch.float32).to(device)
 
@@ -161,6 +167,7 @@ def training(params, make_err_logs=False):
     errors = []
     stopped = False
     early_stopping = MAX_NUMBER_OF_EPOCHS
+    epoch_stopped = 1000
 
     for epoch in range(MAX_NUMBER_OF_EPOCHS):
 
@@ -186,6 +193,7 @@ def training(params, make_err_logs=False):
                     loss_diff = difference
                     final_valid_loss = validation_loss
                     final_train_loss = training_loss
+                    epoch_stopped = epoch
                     # if still some progress can be made -> save the currently best model
                     torch.save(model.state_dict(), './final_model.pth')
 
@@ -204,7 +212,8 @@ def training(params, make_err_logs=False):
                 early_stopping_counter = 0
                 early_stopping = epoch
             else:
-                return final_valid_loss
+                # return minimum validation loss, IF NOT overfitted model
+                return final_valid_loss if epoch_stopped > 2 else 100000.0
 
     print(f"Finishing training with best training loss: {final_train_loss:.4f} and best "
           f"validation loss: {final_valid_loss:.4f}")
@@ -212,7 +221,8 @@ def training(params, make_err_logs=False):
     if make_err_logs:
         plot_errors(errors, early_stopping)
 
-    return final_valid_loss
+    # return minimum validation loss, IF NOT overfitted model
+    return final_valid_loss if epoch_stopped > 2 else 100000.0
 
 
 def testing(params):
@@ -220,7 +230,7 @@ def testing(params):
     print("Dataset loading...")
 
     # dataset is different, just load it
-    dataset = SAT3Dataset(filename="store_test_lstm.csv", sequence_length=params["sequence_length"])
+    dataset = SAT3Dataset(filename="store_test_lstm.csv")
     test_loader = DataLoader(dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
 
     print("Dataset loading completed\n")

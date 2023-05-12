@@ -9,7 +9,7 @@ def tune_parameters(pos_weight):
         "model_embedding_size": [64, 128],
         "model_attention_heads": [1],
         "model_layers": [2, 3],
-        "model_dropout_rate": [0.1, 0.2, 0.5],
+        "model_dropout_rate": [0.1, 0.3, 0.5, 0.8],
         "model_dense_neurons": [128, 256]
     }
     # parameters that have to do with the training

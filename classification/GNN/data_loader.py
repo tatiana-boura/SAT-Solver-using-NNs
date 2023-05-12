@@ -194,7 +194,7 @@ def dataset_processing(separate_test=False):
     # store dataset in format that supports long lists
 
     # shuffle the dataset
-    df = df.sample(frac=1).reset_index(drop=True)
+    # df = df.sample(frac=1).reset_index(drop=True)
 
     if not separate_test:
         df_tr = df.sample(frac=0.8)
