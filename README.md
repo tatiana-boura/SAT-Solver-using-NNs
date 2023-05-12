@@ -1,1 +1,1 @@
-# MSc-in-AI-Demokritos-Deep-Learning-Course
+# Predicting Satisfiability in 3-SAT using Graphical Neural Networks(GNNs) and Long Short-Term Memory Networks(LSTMs)
