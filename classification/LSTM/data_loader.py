@@ -42,7 +42,7 @@ def dataset_processing(separate_test=False):
         df_valid[f'var_{i + 1}'] = 0.0
         df_test[f'var_{i + 1}'] = 0.0
 
-    directory = "../../dataset"
+    directory = "../dataset"
 
     satisfiable_num = 0
     unsatisfiable_num = 0
@@ -96,7 +96,6 @@ def dataset_processing(separate_test=False):
                 for i in range(len(timeseries), MAX_TIMESERIES_LENGTH):
                     timeseries += [0.0]
 
-                #print(len(timeseries))
                 '''
                 if fileName == "uf4.cnf":
                     print(node_values)
@@ -170,20 +169,20 @@ def dataset_processing(separate_test=False):
                 else:
                     counter += 1
 
+    # print some metrics
     print(f'Satisfiable CNFs   : {satisfiable_num}')
     print(f'Unsatisfiable CNFs : {unsatisfiable_num}\n')
 
     sat_ratio = satisfiable_num / (satisfiable_num + unsatisfiable_num)
 
     print(f'Ratio of SAT   : {sat_ratio:.4f}')
-    print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}')
+    print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}\n')
 
-    # usually time series data are split without shuffling
+    print(f'Training set size: {len(df_tr)}')
+    print(f'Validation set size: {len(df_valid)}')
+    print(f'Test set size: {len(df_test)}')
 
-    print(len(df_tr))
-    print(len(df_valid))
-    print(len(df_test))
-
+    # store datasets
     df_tr.to_csv("./store_lstm.csv", index=False)
     df_valid.to_csv("./store_valid_lstm.csv", index=False)
     df_test.to_csv("./store_test_lstm.csv", index=False)

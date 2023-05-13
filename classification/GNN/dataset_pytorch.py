@@ -22,6 +22,7 @@ class SAT3Dataset(Dataset):
         # If these files are found in raw_dir, processing is skipped
         store = pd.HDFStore(os.path.join(self.raw_dir, self.filename))
         self.data = store['df'].reset_index()
+        store.close()
 
         if self.test:
             return [f'data_test_{i}.pt' for i in list(self.data.index)]
@@ -36,6 +37,7 @@ class SAT3Dataset(Dataset):
         # open the dataframe
         store = pd.HDFStore(os.path.join(self.raw_dir, self.filename))
         self.data = store['df'].reset_index()
+        store.close()
 
         for index, cnf in tqdm(self.data.iterrows(), total=self.data.shape[0]):
             # get node features (here we actually don't have many)

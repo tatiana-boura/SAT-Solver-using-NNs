@@ -20,25 +20,6 @@ def tune_parameters(pos_weight):
         "pos_weight": [pos_weight]
     }
 
-    '''
-     # parameters that have to do with the GNN
-    hyperparameters_options_model = {
-        "model_embedding_size": [64],
-        "model_attention_heads": [1],
-        "model_layers": [3],
-        "model_dropout_rate": [0.1],
-        "model_dense_neurons": [256]
-    }
-    # parameters that have to do with the training
-    hyperparameters_options_algo = {
-        "batch_size": [64],   # with 128, time error
-        "learning_rate": [0.001],
-        "weight_decay": [0.00001],
-        "pos_weight": [pos_weight]
-    }
-
-    '''
-
     model_hyperparameters = {"batch_size": 64, "learning_rate": 0.01, "weight_decay": 0.0001, "pos_weight": pos_weight,
                              "model_embedding_size": 0, "model_attention_heads": 0, "model_layers": 0,
                              "model_dropout_rate": 0, "model_dense_neurons": 0}

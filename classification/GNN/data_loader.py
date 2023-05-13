@@ -25,7 +25,7 @@ the AND operator. The number of row is the number of clauses .
 
 
 def dataset_processing(separate_test=False):
-    """ The separate_test value is used if we want to use as test set the  cnf's that have the biggest length
+    """ separate_test: if we want to use as test set the  cnf's that have the biggest length
     (to see if the model generalizes well) in larger inputs than these that it has been trained for """
 
     print("Start the data processing...\n")
@@ -75,19 +75,6 @@ def dataset_processing(separate_test=False):
             #     2*numberOfVariables - 2*numberOfVariables + numberOfClauses   : c_1 - c_m
 
             nodes = [i for i in range(0, 2 * number_of_variables + number_of_clauses)]
-            # node with symbolic values
-            '''
-            node_values = ["x" + str(i + 1) for i in range(0, numberOfVariables)]
-            node_values += ["-x" + str(i + 1) for i in range(0, numberOfVariables)]
-            node_values += ["c" + str(i + 1) for i in range(0, numberOfClauses)]
-            '''
-            '''
-            node_values = [i+1 for i in range(0, numberOfVariables)]
-            node_values += [-(i+1) for i in range(0, numberOfVariables)]
-            node_values += [numberOfVariables for i in range(0, numberOfClauses)]
-            '''
-
-            # node_values = [[np.random.uniform()] for _ in range(0, 2 * number_of_variables + number_of_clauses)]
             x_i = [[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, number_of_variables)]
             node_values = x_i
             node_values += [[-i] for [i] in x_i]
@@ -120,10 +107,6 @@ def dataset_processing(separate_test=False):
                     # first characteristic is :  connection between x_i and ~x_i
                     # second characteristic is :  connection between c_j and x_i
                     edge_attr += [[1, 0]]
-                    '''
-                    # third characteristic is :  connection between c_j and c_k
-                    edgeAttr += [[1,0,0]]
-                    '''
 
                 # make the edges from corresponding c_j -> x_i (NOW VICE VERSA)
                 count = 0
@@ -141,35 +124,7 @@ def dataset_processing(separate_test=False):
                         edge_attr += [[0, 1]]
 
                     count += 1
-                '''
-                # make the edges from c_j -> c_k
-                for i in range(numberOfClauses-1):
-                    clausesPos = 2*numberOfVariables+i
-    
-                    #temp = [clausesPos+1 for _ in range(0,numberOfClauses-i-1)]
-                    for j in range(1, numberOfClauses - i):
-                        edges_1 += [clausesPos]
-                        edges_1 += [clausesPos+j]
-    
-                        edges_2 += [clausesPos+j]
-                        edges_2 += [clausesPos]
-    
-                        edgeAttr += [[0, 0, 1]]
-                '''
-                '''
-                totalNumOfEdges = 3*numberOfClauses +
-                if len(edgeAttr) != numberOfClauses:
-                    # if the lines(clauses) that we processed are not the correct number(), raise Exception
-                    raise Exception("Something went wrong with the line processing")
-                
 
-                if fileName == "uf4.cnf":
-                    print(nodes)
-                    print(node_values)
-                    print(clauses)
-                    print(edges_1)
-                    print(edges_2)
-                '''
                 f.close()
 
                 # insert new row in dataframe :
@@ -183,19 +138,16 @@ def dataset_processing(separate_test=False):
                                        node_values, nodes, [edges_1, edges_2],
                                        [edge_attr, edge_attr], [y]]
 
+    # print some metrics
     print(f'Satisfiable CNFs   : {satisfiable_num}')
     print(f'Unsatisfiable CNFs : {unsatisfiable_num}\n')
 
-    sat_ratio = satisfiable_num/(satisfiable_num+unsatisfiable_num)
+    sat_ratio = satisfiable_num / (satisfiable_num + unsatisfiable_num)
 
     print(f'Ratio of SAT   : {sat_ratio:.4f}')
-    print(f'Ratio of UNSAT : {1.0-sat_ratio:.4f}')
+    print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}\n')
 
     # store dataset in format that supports long lists
-
-    # shuffle the dataset
-    # df = df.sample(frac=1).reset_index(drop=True)
-
     if not separate_test:
         df_tr = df.sample(frac=0.8)
         df_test = df.drop(df_tr.index)
@@ -208,6 +160,9 @@ def dataset_processing(separate_test=False):
         store['df'] = df_test
         store.close()
 
+        print(f'Training set size: {len(df_tr)}')
+        print(f'Test set size: {len(df_test)}')
+
     else:
         store = pd.HDFStore('./raw/store.h5')
         store['df'] = df
@@ -216,6 +171,9 @@ def dataset_processing(separate_test=False):
         store = pd.HDFStore('./raw/store_test.h5')
         store['df'] = df_test
         store.close()
+
+        print(f'Training set size: {len(df)}')
+        print(f'Test set size: {len(df_test)}')
 
     print("\nProcessing completed.")
 
