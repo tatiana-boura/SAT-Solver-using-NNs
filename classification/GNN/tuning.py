@@ -42,7 +42,7 @@ def tune_parameters(pos_weight):
         model_hyperparameters["model_dense_neurons"] = parameters[4]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=model_hyperparameters)
+        validation_loss = training(params=model_hyperparameters, )
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')

@@ -42,7 +42,7 @@ def dataset_processing():
         df_valid[f'var_{i + 1}'] = 0.0
         df_test[f'var_{i + 1}'] = 0.0
 
-    directory = "../../dataset"
+    directory = "../../dataset/SAT3"
 
     satisfiable_num = 0
     unsatisfiable_num = 0

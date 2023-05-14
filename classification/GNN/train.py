@@ -140,7 +140,7 @@ def evaluation(model, test_loader, criterion, print_metrics=False):
     return running_loss / step
 
 
-def training(params, make_err_logs=False):
+def training(params, model_name, make_err_logs=False):
     # loading the dataset
     print("Dataset loading...")
     dataset = SAT3Dataset(root="./", filename="store.h5")
@@ -217,7 +217,7 @@ def training(params, make_err_logs=False):
                     final_valid_loss = validation_loss
                     final_train_loss = training_loss
                     # if still some progress can be made -> save the currently best model
-                    torch.save(model.state_dict(), './final_model.pth')
+                    torch.save(model.state_dict(), model_name)
 
                     early_stopping_counter = 0
                 else:
@@ -245,7 +245,7 @@ def training(params, make_err_logs=False):
     return final_valid_loss
 
 
-def testing(params):
+def testing(params, model_name):
     # loading the dataset
     print("Dataset loading...")
 
@@ -259,7 +259,7 @@ def testing(params):
     print("Model loading...")
     model_params = {k: v for k, v in params.items() if k.startswith("model_")}
     best_model = GNN(feature_size=dataset[0].x.shape[1], model_params=model_params)
-    best_model.load_state_dict(torch.load('./final_model.pth', map_location="cuda:0"))
+    best_model.load_state_dict(torch.load(model_name, map_location="cuda:0"))
     best_model.to(device)
     best_model.eval()
     print("Model loading completed\n")

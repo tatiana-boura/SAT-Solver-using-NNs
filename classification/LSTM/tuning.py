@@ -2,7 +2,7 @@ from train import training
 import itertools as it
 
 
-def tune_parameters(pos_weight):
+def tune_parameters(pos_weight, model_name):
 
     # parameters that have to do with the LSTM
     hyperparameters_options_model = {
@@ -38,7 +38,7 @@ def tune_parameters(pos_weight):
         model_hyperparameters["model_dropout"] = parameters[2]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=model_hyperparameters)
+        validation_loss = training(params=model_hyperparameters, model_name=model_name)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
@@ -49,7 +49,7 @@ def tune_parameters(pos_weight):
 
     # Now, tune parameters that correspond to the algo and not the LSTM's architecture
     # we keep the tuned parameters from before
-    algo_hyperparameters = {"batch_size": 0, "learning_rate": 0, "weight_decay": 0, "pos_weight": 0,
+    algo_hyperparameters = {"batch_size": 16, "learning_rate": 0.05, "weight_decay": 0.001, "pos_weight": pos_weight,
                             "model_hidden_units": best_model_parameters["model_hidden_units"],
                             "model_num_layers": best_model_parameters["model_num_layers"],
                             "model_dropout": best_model_parameters["model_dropout"]}
@@ -69,7 +69,7 @@ def tune_parameters(pos_weight):
         algo_hyperparameters["pos_weight"] = parameters[3]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=algo_hyperparameters)
+        validation_loss = training(params=algo_hyperparameters, model_name=model_name)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
