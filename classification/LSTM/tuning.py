@@ -9,8 +9,6 @@ def tune_parameters(pos_weight):
         "model_hidden_units": [8, 16, 32, 64],
         "model_num_layers": [1, 3, 5],
         "model_dropout": [0.0, 0.3, 0.5, 0.8],
-        # "model_deep_layers": [1, 2, 3]
-        "model_deep_layers": [1]
     }
 
     # parameters that have to do with the training
@@ -21,9 +19,8 @@ def tune_parameters(pos_weight):
         "pos_weight": [pos_weight]
     }
 
-    model_hyperparameters = {"batch_size": 16, "learning_rate": 0.05, "weight_decay": 0.001,
-                             "pos_weight": pos_weight, "model_hidden_units": 16, "model_num_layers": 1,
-                             "model_dropout": 0.7, "model_deep_layers": 1}
+    model_hyperparameters = {"batch_size": 16, "learning_rate": 0.05, "weight_decay": 0.001, "pos_weight": pos_weight,
+                             "model_hidden_units": 16, "model_num_layers": 1, "model_dropout": 0.7}
 
     # get all possible combination of the model's parameters
     model_parameter_combinations = it.product(*(hyperparameters_options_model[param] for param in
@@ -39,7 +36,6 @@ def tune_parameters(pos_weight):
         model_hyperparameters["model_hidden_units"] = parameters[0]
         model_hyperparameters["model_num_layers"] = parameters[1]
         model_hyperparameters["model_dropout"] = parameters[2]
-        model_hyperparameters["model_deep_layers"] = parameters[3]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
         validation_loss = training(params=model_hyperparameters)
@@ -56,8 +52,7 @@ def tune_parameters(pos_weight):
     algo_hyperparameters = {"batch_size": 0, "learning_rate": 0, "weight_decay": 0, "pos_weight": 0,
                             "model_hidden_units": best_model_parameters["model_hidden_units"],
                             "model_num_layers": best_model_parameters["model_num_layers"],
-                            "model_dropout": best_model_parameters["model_dropout"],
-                            "model_deep_layers": best_model_parameters["model_deep_layers"]}
+                            "model_dropout": best_model_parameters["model_dropout"]}
 
     # get all possible combination of the algo's parameters
     algo_parameter_combinations = it.product(*(hyperparameters_options_algo[param] for param in
@@ -72,7 +67,6 @@ def tune_parameters(pos_weight):
         algo_hyperparameters["learning_rate"] = parameters[1]
         algo_hyperparameters["weight_decay"] = parameters[2]
         algo_hyperparameters["pos_weight"] = parameters[3]
-
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
         validation_loss = training(params=algo_hyperparameters)

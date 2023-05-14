@@ -27,7 +27,7 @@ the AND operator. The number of row is the number of clauses .
 '''
 
 
-def dataset_processing(separate_test=False):
+def dataset_processing():
 
     print("Start the data processing...\n")
 
@@ -42,13 +42,12 @@ def dataset_processing(separate_test=False):
         df_valid[f'var_{i + 1}'] = 0.0
         df_test[f'var_{i + 1}'] = 0.0
 
-    directory = "../dataset"
+    directory = "../../dataset"
 
     satisfiable_num = 0
     unsatisfiable_num = 0
 
     counter = 0
-    cOunt = 0
     for dirName in os.listdir(directory):
         curr_dir = directory + "/" + dirName
         if os.path.isdir(curr_dir):
@@ -109,60 +108,35 @@ def dataset_processing(separate_test=False):
                 k *= 3  # as k represent the number of clauses
                 k -= 1
                 timeseries_sat = timeseries[:k] + [0.0 for _ in range(k, len(timeseries))]
-               
-                if not separate_test:
-                    if counter < 8:
-                        df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
-                        if y == 0.0:
-                            unsatisfiable_num += 1
-                            df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
+
+                # train set is 80% - validation set is 20% - test set is 20%
+                # more data augmentation is performed as noted in the report
+                if counter < 8:
+                    df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
+                    if y == 0.0:
+                        unsatisfiable_num += 1
+                        df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
+                                                [0.0 for _ in range(k + 2, len(timeseries))]
+                    # then insert the timeseries
+                    df_tr.loc[len(df_tr)] = [y] + timeseries
+
+                elif counter < 9:
+                    df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
+                    if y == 0.0:
+                        unsatisfiable_num += 1
+                        df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
+                                                      [0.0 for _ in range(k + 2, len(timeseries))]
+                    # then insert the timeseries
+                    df_valid.loc[len(df_valid)] = [y] + timeseries
+
+                elif counter < 10:
+                    df_test.loc[len(df_test)] = [1.0] + timeseries_sat
+                    if y == 0.0:
+                        unsatisfiable_num += 1
+                        df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
                                                     [0.0 for _ in range(k + 2, len(timeseries))]
-                        # then insert the timeseries
-                        df_tr.loc[len(df_tr)] = [y] + timeseries
-
-                    elif counter < 9:
-                        df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
-                        if y == 0.0:
-                            unsatisfiable_num += 1
-                            df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
-                                                          [0.0 for _ in range(k + 2, len(timeseries))]
-                        # then insert the timeseries
-                        df_valid.loc[len(df_valid)] = [y] + timeseries
-
-                    elif counter < 10:
-                        df_test.loc[len(df_test)] = [1.0] + timeseries_sat
-                        if y == 0.0:
-                            unsatisfiable_num += 1
-                            df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
-                                                        [0.0 for _ in range(k + 2, len(timeseries))]
-                        # then insert the timeseries
-                        df_test.loc[len(df_test)] = [y] + timeseries
-                else:
-                    if dir_info[0] == "UF250" or dir_info[0] == "UUF250":
-                        if y == 0.0:
-                            unsatisfiable_num += 1
-                            df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
-                                                        [0.0 for _ in range(k + 2, len(timeseries))]
-                        df_test.loc[len(df_test)] = [1.0] + timeseries_sat
-                        # then insert the timeseries
-                        df_test.loc[len(df_test)] = [y] + timeseries
-                    else:
-                        if counter < 8:
-                            if y == 0.0:
-                                unsatisfiable_num += 1
-                                df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
-                                                        [0.0 for _ in range(k + 2, len(timeseries))]
-                            df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
-                            # then insert the timeseries
-                            df_tr.loc[len(df_tr)] = [y] + timeseries
-                        else:
-                            if y == 0.0:
-                                unsatisfiable_num += 1
-                                df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
-                                                              [0.0 for _ in range(k + 2, len(timeseries))]
-                            df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
-                            # then insert the timeseries
-                            df_valid.loc[len(df_valid)] = [y] + timeseries
+                    # then insert the timeseries
+                    df_test.loc[len(df_test)] = [y] + timeseries
 
                 if counter == 10:
                     counter = 0
