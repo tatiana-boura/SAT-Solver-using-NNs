@@ -2,7 +2,7 @@ import itertools as it
 from train import training
 
 
-def tune_parameters(pos_weight):
+def tune_parameters(pos_weight, model_name):
 
     # parameters that have to do with the GNN
     hyperparameters_options_model = {
@@ -42,7 +42,7 @@ def tune_parameters(pos_weight):
         model_hyperparameters["model_dense_neurons"] = parameters[4]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=model_hyperparameters, )
+        validation_loss = training(params=model_hyperparameters, model_name=model_name)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
@@ -76,7 +76,7 @@ def tune_parameters(pos_weight):
 
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=algo_hyperparameters)
+        validation_loss = training(params=model_hyperparameters, model_name=model_name)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')

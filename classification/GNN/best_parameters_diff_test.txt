@@ -1,1 +1,1 @@
-{"batch_size": 32, "learning_rate": 0.001, "weight_decay": 1e-05, "pos_weight": 0.7220216606498195, "model_embedding_size": 64, "model_attention_heads": 1, "model_layers": 2, "model_dropout_rate": 0.8, "model_dense_neurons": 256, "model_edge_dim": 2}
+{"batch_size": 32, "learning_rate": 0.01, "weight_decay": 0.001, "pos_weight": 0.7220216606498195, "model_embedding_size": 64, "model_attention_heads": 1, "model_layers": 3, "model_dropout_rate": 0.1, "model_dense_neurons": 256}

@@ -2,7 +2,7 @@ from train import training
 import itertools as it
 
 
-def tune_parameters(pos_weight, model_name):
+def tune_parameters(pos_weight):
 
     # parameters that have to do with the LSTM
     hyperparameters_options_model = {
@@ -38,7 +38,7 @@ def tune_parameters(pos_weight, model_name):
         model_hyperparameters["model_dropout"] = parameters[2]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=model_hyperparameters, model_name=model_name)
+        validation_loss = training(params=model_hyperparameters)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
@@ -69,7 +69,7 @@ def tune_parameters(pos_weight, model_name):
         algo_hyperparameters["pos_weight"] = parameters[3]
         # try training with these parameters
         print(f'\nTest number {counter} | Start testing new parameter-combination...\n')
-        validation_loss = training(params=algo_hyperparameters, model_name=model_name)
+        validation_loss = training(params=algo_hyperparameters)
         # choose these parameters if they give us a smaller validation set-loss
         if validation_loss < best_validation_loss:
             print('New best parameters found!\n')
