@@ -61,18 +61,24 @@ def metrics(y_pred, y, y_proba=[]):
     print(f"Precision : {precision_score(y, y_pred):.4f}")
     print(f"Recall    : {recall_score(y, y_pred):.4f}")
     # auc score
-    print(f"ROC AUC   : {roc_auc_score(y, y_pred):.4f}")
 
-    # plot roc - auc curve
-    RocCurveDisplay.from_predictions(y, y_pred)
-    plt.plot([0, 1], [0, 1], "k--", label="chance level (AUC = 0.5)")
-    plt.axis("square")
-    plt.xlabel("FP Rate")
-    plt.ylabel("TP Rate")
-    plt.legend()
-    plt.title("ROC-AUC curve")
-    plt.savefig(f'./plots/roc_auc.png')
-    plt.close()
+    one_class = False
+    if sum(y) == len(y) or sum(y) == 0:
+        one_class = True
+
+    if not one_class:
+        print(f"ROC AUC   : {roc_auc_score(y, y_pred):.4f}")
+
+        # plot roc - auc curve
+        RocCurveDisplay.from_predictions(y, y_pred)
+        plt.plot([0, 1], [0, 1], "k--", label="chance level (AUC = 0.5)")
+        plt.axis("square")
+        plt.xlabel("FP Rate")
+        plt.ylabel("TP Rate")
+        plt.legend()
+        plt.title("ROC-AUC curve")
+        plt.savefig(f'./plots/roc_auc.png')
+        plt.close()
 
     if len(y_proba) > 0:
         prec, recall, _ = precision_recall_curve(probas_pred=y_proba, y_true=y, pos_label=1.0)
@@ -245,15 +251,18 @@ def training(params, model_name, make_err_logs=False):
     return final_valid_loss
 
 
-def testing(params, model_name):
+def testing(params, model_name, test_set="store_test.h5"):
     # loading the dataset
     print("Dataset loading...")
 
     # dataset is different, just load it
-    dataset = SAT3Dataset(root="./", filename="store_test.h5", test=True)
+    dataset = SAT3Dataset(root="./", filename=test_set, test=True)
     test_loader = DataLoader(dataset, batch_size=params["batch_size"])  # no need to shuffle the test set
 
     print("Dataset loading completed\n")
+
+    ### ADDED LATER: CHAECK
+    params["model_edge_dim"] = dataset[0].edge_attr.shape[1]
 
     # see test set's metrics in the best (not overfitted) model
     print("Model loading...")
