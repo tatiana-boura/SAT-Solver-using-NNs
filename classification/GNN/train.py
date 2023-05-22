@@ -261,7 +261,6 @@ def testing(params, model_name, test_set="store_test.h5"):
 
     print("Dataset loading completed\n")
 
-    ### ADDED LATER: CHAECK
     params["model_edge_dim"] = dataset[0].edge_attr.shape[1]
 
     # see test set's metrics in the best (not overfitted) model
