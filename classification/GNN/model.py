@@ -21,7 +21,6 @@ class GNN(torch.nn.Module):
         self.transf_layers = ModuleList([])
         self.bn_layers = ModuleList([])
 
-        # first layer "batch"
         self.conv1 = TransformerConv(feature_size, embedding_size, heads=n_heads,
                                      dropout=dropout_rate, edge_dim=edge_dim, beta=True)
         self.transf1 = Linear(embedding_size * n_heads, embedding_size)

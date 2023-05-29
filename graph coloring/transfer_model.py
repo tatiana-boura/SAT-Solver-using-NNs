@@ -2,7 +2,6 @@ import itertools as it
 import numpy as np
 import torch
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn import TransformerConv
 from dataset_pytorch import SAT3Dataset
 from model import GNN
 import warnings
@@ -141,27 +140,12 @@ def re_training(params, best_pre_trained_params, model_name, train_set="store.h5
         param.requires_grad = False
 
     # Modify the last linear layer that will be re-trained
-    '''
-    feature_size = dataset[0].x.shape[1]
-    embedding_size = best_pre_trained_params["model_embedding_size"]
-    n_heads = best_pre_trained_params["model_attention_heads"]
-    dropout_rate = best_pre_trained_params["model_dropout_rate"]
-    edge_dim = best_pre_trained_params["model_edge_dim"]
-    '''
-
-    number_features1 = best_model.linear1.in_features
-    number_features2 = best_model.linear2.in_features
+    #number_features1 = best_model.linear1.in_features
+    #number_features2 = best_model.linear2.in_features
     number_features3 = best_model.linear3.in_features
 
-    '''
-    best_model.conv1 = TransformerConv(feature_size, embedding_size, heads=n_heads,
-                                       dropout=dropout_rate, edge_dim=edge_dim, beta=True)
-    best_model.transf1 = torch.nn.Linear(embedding_size * n_heads, embedding_size)
-    best_model.bn1 = torch.nn.BatchNorm1d(embedding_size)
-    '''
-
-    best_model.linear1 = torch.nn.Linear(number_features1, number_features2)
-    best_model.linear2 = torch.nn.Linear(number_features2, number_features3)
+    #best_model.linear1 = torch.nn.Linear(number_features1, number_features2)
+    #best_model.linear2 = torch.nn.Linear(number_features2, number_features3)
     best_model.linear3 = torch.nn.Linear(number_features3, 1)
 
     best_model.to(device)

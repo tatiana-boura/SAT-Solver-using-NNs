@@ -101,7 +101,7 @@ def dataset_processing():
             x_i = [[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, number_of_variables)]
             node_values = x_i
             node_values += [[-i] for [i] in x_i]
-            node_values += [[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, number_of_clauses)]
+            node_values += [[1] for _ in range(0, number_of_clauses)]
 
             for fileName in os.listdir(curr_dir):
                 f = open(curr_dir + "/" + fileName, "r")
@@ -195,7 +195,7 @@ def dataset_processing():
                                    [edges_1, edges_2],
                                    [edge_attr, edge_attr], [1]]
                 # .. and one unsatisfiable instance
-                df.loc[len(df)] = [node_values+[[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, 18)],
+                df.loc[len(df)] = [node_values+[[1] for _ in range(0, 18)],
                                    [edges_1_unsat, edges_2_unsat],
                                    [edge_attr_unsat, edge_attr_unsat], [0]]
 

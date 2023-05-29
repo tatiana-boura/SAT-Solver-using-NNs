@@ -42,7 +42,7 @@ def plot_errors(errors, early_stopping):
     plt.close()
 
 
-def metrics(y_pred, y, y_proba=[]):
+def metrics(y_pred, y, plot_var, y_proba=[]):
     print(f"\n Confusion matrix: \n {confusion_matrix(y_pred, y)}")
     cm = confusion_matrix(y_pred, y)
     classes = ["UNSATISFIABLE", "SATISFIABLE"]
@@ -52,7 +52,7 @@ def metrics(y_pred, y, y_proba=[]):
     df_cfm = pd.DataFrame(cm, index=classes, columns=classes)
     plt.figure(figsize=(10, 7))
     cfm_plot = sns.heatmap(df_cfm, annot=True, cmap='Blues', fmt='g', ax=ax)
-    cfm_plot.figure.savefig(f'./plots/cm.png')
+    cfm_plot.figure.savefig(f'./plots/cm_{plot_var}.png')
     plt.close()
 
     # compute metrics
@@ -77,7 +77,7 @@ def metrics(y_pred, y, y_proba=[]):
         plt.ylabel("TP Rate")
         plt.legend()
         plt.title("ROC-AUC curve")
-        plt.savefig(f'./plots/roc_auc.png')
+        plt.savefig(f'./plots/roc_auc_{plot_var}.png')
         plt.close()
 
     if len(y_proba) > 0:
@@ -87,7 +87,7 @@ def metrics(y_pred, y, y_proba=[]):
         fig, ax = plt.subplots()
         ax.set_title("Precision-Recall Curve")
         pr_display.plot(ax=ax)
-        fig.figure.savefig(f'./plots/pr.png')
+        fig.figure.savefig(f'./plots/pr_{plot_var}.png')
         plt.close()
 
 
@@ -113,7 +113,7 @@ def train_one_epoch(model, train_loader, optimizer, criterion):
     return running_loss / step
 
 
-def evaluation(model, test_loader, criterion, print_metrics=False):
+def evaluation(model, test_loader, criterion, plot_var="same", print_metrics=False):
     predictions = []
     predictions_proba = []
     labels = []
@@ -141,7 +141,7 @@ def evaluation(model, test_loader, criterion, print_metrics=False):
         labels = np.concatenate(labels).ravel()
         predictions_proba = np.concatenate(predictions_proba).ravel()
 
-        metrics(predictions, labels, predictions_proba)
+        metrics(predictions, labels, plot_var, predictions_proba)
 
     return running_loss / step
 
@@ -251,7 +251,7 @@ def training(params, model_name, make_err_logs=False):
     return final_valid_loss
 
 
-def testing(params, model_name, test_set="store_test.h5"):
+def testing(params, model_name, plot_var="same", test_set="store_test.h5"):
     # loading the dataset
     print("Dataset loading...")
 
@@ -278,5 +278,5 @@ def testing(params, model_name, test_set="store_test.h5"):
     criterion = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
 
     print("\nTest set metrics:")
-    test_loss = evaluation(best_model, test_loader, criterion, print_metrics=True)
+    test_loss = evaluation(best_model, test_loader, criterion, plot_var, print_metrics=True)
     print(f"Test Loss : {test_loss}")

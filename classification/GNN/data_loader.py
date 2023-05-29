@@ -78,7 +78,7 @@ def dataset_processing(separate_test=False):
             x_i = [[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, number_of_variables)]
             node_values = x_i
             node_values += [[-i] for [i] in x_i]
-            node_values += [[np.random.uniform(low=-1.0, high=1.0)] for _ in range(0, number_of_clauses)]
+            node_values += [[1] for _ in range(0, number_of_clauses)]
 
             for fileName in os.listdir(curr_dir):
                 f = open(curr_dir + "/" + fileName, "r")
