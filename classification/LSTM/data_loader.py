@@ -62,9 +62,9 @@ def dataset_processing():
 
             # we want to see the balancing of the training dataset
             if y == 1:
-                satisfiable_num += 2*int(dir_info[2])  # 2 because of the augmentation trick
+                satisfiable_num += int(dir_info[2])  # count series, not actual problem-instances
             else:
-                unsatisfiable_num += int(dir_info[2])
+                unsatisfiable_num += 2*int(dir_info[2])  # count series, not actual problem-instances
 
             # Nodes:
             #     0 - numberOfVariables- 1                                      : x_1 - x_n
@@ -95,11 +95,6 @@ def dataset_processing():
                 for i in range(len(timeseries), MAX_TIMESERIES_LENGTH):
                     timeseries += [0.0]
 
-                '''
-                if fileName == "uf4.cnf":
-                    print(node_values)
-                    print(timeseries)
-                '''
                 f.close()
 
                 # insert new row in dataframes :
@@ -111,50 +106,49 @@ def dataset_processing():
 
                 # train set is 80% - validation set is 20% - test set is 20%
                 # more data augmentation is performed as noted in the report
-                if counter < 8:
+                if counter <= 8:
                     df_tr.loc[len(df_tr)] = [1.0] + timeseries_sat
                     if y == 0.0:
-                        unsatisfiable_num += 1
                         df_tr.loc[len(df_tr)] = [y] + timeseries[:(k + 2)] + \
                                                 [0.0 for _ in range(k + 2, len(timeseries))]
                     # then insert the timeseries
                     df_tr.loc[len(df_tr)] = [y] + timeseries
 
-                elif counter < 9:
+                elif counter == 9:
                     df_valid.loc[len(df_valid)] = [1.0] + timeseries_sat
                     if y == 0.0:
-                        unsatisfiable_num += 1
                         df_valid.loc[len(df_valid)] = [y] + timeseries[:(k + 2)] + \
                                                       [0.0 for _ in range(k + 2, len(timeseries))]
                     # then insert the timeseries
                     df_valid.loc[len(df_valid)] = [y] + timeseries
 
-                elif counter < 10:
+                elif counter == 10:
                     df_test.loc[len(df_test)] = [1.0] + timeseries_sat
                     if y == 0.0:
-                        unsatisfiable_num += 1
                         df_test.loc[len(df_test)] = [y] + timeseries[:(k + 2)] + \
                                                     [0.0 for _ in range(k + 2, len(timeseries))]
                     # then insert the timeseries
                     df_test.loc[len(df_test)] = [y] + timeseries
 
                 if counter == 10:
-                    counter = 0
+                    counter = 1
                 else:
                     counter += 1
 
     # print some metrics
-    print(f'Satisfiable CNFs   : {satisfiable_num}')
-    print(f'Unsatisfiable CNFs : {unsatisfiable_num}\n')
+    print(f'Satisfiable series of sequence-length 2   : {satisfiable_num}')
+    print(f'Unsatisfiable series of sequence-length 2 : {unsatisfiable_num}\n')
 
     sat_ratio = satisfiable_num / (satisfiable_num + unsatisfiable_num)
 
     print(f'Ratio of SAT   : {sat_ratio:.4f}')
-    print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}\n')
+    print(f'Ratio of UNSAT : {1.0 - sat_ratio:.4f}')
 
-    print(f'Training set size: {len(df_tr)}')
+    '''
+    print(f'\nTraining set size: {len(df_tr)}')
     print(f'Validation set size: {len(df_valid)}')
     print(f'Test set size: {len(df_test)}')
+    '''
 
     # store datasets
     df_tr.to_csv("./store_lstm.csv", index=False)

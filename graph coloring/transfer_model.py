@@ -22,8 +22,8 @@ def tune_parameters(pos_weight, model_name, best_pre_trained):
 
     # parameters that have to do with the training
     hyperparameters_options_algo = {
-        "batch_size": [16, 32],  # with 128, time error
-        "learning_rate": [0.001, 0.01, 0.1],
+        "batch_size": [16, 32],
+        "learning_rate": [0.001, 0.005, 0.01],
         "weight_decay": [0.00001, 0.0001, 0.001],
         "pos_weight": [pos_weight]
     }
